@@ -41,6 +41,41 @@ app.get('/api/users', (req, res) => {
   res.json(users);
 });
 
+// ✅ POST /api/users/:_id/exercises
+app.post('/api/users/:_id/exercises', (req, res) => {
+  const { _id } = req.params;
+  const { description, duration, date } = req.body;
+
+  const user = users.find(u => u._id === _id);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+
+  const parsedDuration = parseInt(duration);
+  if (!description || isNaN(parsedDuration)) {
+    return res.status(400).json({ error: 'Invalid description or duration' });
+  }
+
+  const exerciseDate = date ? new Date(date) : new Date();
+  const formattedDate = exerciseDate.toDateString();
+
+  const newExercise = {
+    _id,
+    username: user.username,
+    description,
+    duration: parsedDuration,
+    date: formattedDate
+  };
+
+  exercises.push(newExercise);
+
+  res.json({
+    username: user.username,
+    description,
+    duration: parsedDuration,
+    date: formattedDate,
+    _id: user._id
+  });
+});
+
 const listener = app.listen(process.env.PORT || 3000, () => {
   console.log('Your app is listening on port ' + listener.address().port)
 })
@@ -65,40 +100,7 @@ const listener = app.listen(process.env.PORT || 3000, () => {
 
 
 
-// // ✅ POST /api/users/:_id/exercises
-// app.post('/api/users/:_id/exercises', (req, res) => {
-//   const { _id } = req.params;
-//   const { description, duration, date } = req.body;
 
-//   const user = users.find(u => u._id === _id);
-//   if (!user) return res.status(404).json({ error: 'User not found' });
-
-//   const parsedDuration = parseInt(duration);
-//   if (!description || isNaN(parsedDuration)) {
-//     return res.status(400).json({ error: 'Invalid description or duration' });
-//   }
-
-//   const exerciseDate = date ? new Date(date) : new Date();
-//   const formattedDate = exerciseDate.toDateString();
-
-//   const newExercise = {
-//     _id,
-//     username: user.username,
-//     description,
-//     duration: parsedDuration,
-//     date: formattedDate
-//   };
-
-//   exercises.push(newExercise);
-
-//   res.json({
-//     username: user.username,
-//     description,
-//     duration: parsedDuration,
-//     date: formattedDate,
-//     _id: user._id
-//   });
-// });
 
 // // ✅ GET /api/users/:_id/logs
 // app.get('/api/users/:_id/logs', (req, res) => {
