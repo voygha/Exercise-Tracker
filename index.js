@@ -35,9 +35,10 @@ app.post('/api/users', (req, res) => {
   users.push(newUser);
   userIdCounter++;
 
-  // 👇 Redirige al home
-  res.redirect('/');
+  // ✅ RESPONDE CON JSON
+  res.json(newUser);
 });
+
 
 
 
