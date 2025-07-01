@@ -36,6 +36,11 @@ app.post('/api/users', (req, res) => {
   res.json(newUser);
 });
 
+// ✅ GET /api/users
+app.get('/api/users', (req, res) => {
+  res.json(users);
+});
+
 const listener = app.listen(process.env.PORT || 3000, () => {
   console.log('Your app is listening on port ' + listener.address().port)
 })
@@ -58,10 +63,7 @@ const listener = app.listen(process.env.PORT || 3000, () => {
 
 
 
-// // ✅ GET /api/users
-// app.get('/api/users', (req, res) => {
-//   res.json(users);
-// });
+
 
 // // ✅ POST /api/users/:_id/exercises
 // app.post('/api/users/:_id/exercises', (req, res) => {
