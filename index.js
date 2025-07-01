@@ -4,66 +4,56 @@ const cors = require('cors');
 require('dotenv').config();
 
 app.use(cors());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: false })); // 👈 importante para leer form-data
 app.use(express.json());
-app.use(express.static('public'));
+app.use('/public', express.static('public'));
 
 app.get('/', (req, res) => {
   res.sendFile(__dirname + '/views/index.html');
 });
 
-// ============================
-// 💾 Almacenamiento en memoria
-// ============================
-const users = [];
-let userIdCounter = 1;
-const exercises = []; // cada ejercicio tendrá: _id, description, duration, date
+// 🧠 En memoria
+let users = [];
+let exercises = [];
+let nextUserId = 1;
 
-// ==================================
-// ✅ 2 y 3. Crear usuario (POST /api/users)
-// ==================================
+// ✅ POST /api/users
 app.post('/api/users', (req, res) => {
   const username = req.body.username;
   if (!username) return res.status(400).json({ error: 'Username is required' });
 
   const newUser = {
     username,
-    _id: userIdCounter.toString()
+    _id: nextUserId.toString()
   };
-
   users.push(newUser);
-  userIdCounter++;
-
-  res.json(newUser); // ✅ Devuelve { username, _id }
+  nextUserId++;
+  res.json(newUser);
 });
 
-// ================================
-// ✅ 4, 5, 6. Obtener todos los usuarios (GET /api/users)
-// ================================
+// ✅ GET /api/users
 app.get('/api/users', (req, res) => {
-  res.json(users); // ✅ Devuelve array de { username, _id }
+  res.json(users);
 });
 
-// ======================================
-// ✅ 7 y 8. Registrar ejercicio (POST /api/users/:_id/exercises)
-// ======================================
+// ✅ POST /api/users/:_id/exercises
 app.post('/api/users/:_id/exercises', (req, res) => {
-  const userId = req.params._id;
+  const { _id } = req.params;
   const { description, duration, date } = req.body;
 
-  const user = users.find(u => u._id === userId);
+  const user = users.find(u => u._id === _id);
   if (!user) return res.status(404).json({ error: 'User not found' });
 
   const parsedDuration = parseInt(duration);
   if (!description || isNaN(parsedDuration)) {
-    return res.status(400).json({ error: 'Description and valid duration are required' });
+    return res.status(400).json({ error: 'Invalid description or duration' });
   }
 
-  const parsedDate = date ? new Date(date) : new Date();
-  const formattedDate = parsedDate.toDateString();
+  const exerciseDate = date ? new Date(date) : new Date();
+  const formattedDate = exerciseDate.toDateString();
 
   const newExercise = {
-    _id: userId,
+    _id,
     username: user.username,
     description,
     duration: parsedDuration,
@@ -73,59 +63,54 @@ app.post('/api/users/:_id/exercises', (req, res) => {
   exercises.push(newExercise);
 
   res.json({
-    _id: user._id,
     username: user.username,
-    date: formattedDate,
+    description,
     duration: parsedDuration,
-    description
+    date: formattedDate,
+    _id: user._id
   });
 });
 
-// ================================================
-// ✅ 9-16. Obtener historial (GET /api/users/:_id/logs)
-// ================================================
+// ✅ GET /api/users/:_id/logs
 app.get('/api/users/:_id/logs', (req, res) => {
-  const userId = req.params._id;
+  const { _id } = req.params;
   const { from, to, limit } = req.query;
 
-  const user = users.find(u => u._id === userId);
+  const user = users.find(u => u._id === _id);
   if (!user) return res.status(404).json({ error: 'User not found' });
 
-  let userExercises = exercises.filter(e => e._id === userId);
+  let log = exercises.filter(e => e._id === _id);
 
-  // Filtros por fecha
+  // Filtrado por fechas
   if (from) {
     const fromDate = new Date(from);
-    userExercises = userExercises.filter(e => new Date(e.date) >= fromDate);
+    log = log.filter(e => new Date(e.date) >= fromDate);
   }
 
   if (to) {
     const toDate = new Date(to);
-    userExercises = userExercises.filter(e => new Date(e.date) <= toDate);
+    log = log.filter(e => new Date(e.date) <= toDate);
   }
 
-  // Filtro por límite
   if (limit) {
     const parsedLimit = parseInt(limit);
     if (!isNaN(parsedLimit)) {
-      userExercises = userExercises.slice(0, parsedLimit);
+      log = log.slice(0, parsedLimit);
     }
   }
-
-  const log = userExercises.map(e => ({
-    description: e.description,
-    duration: e.duration,
-    date: e.date
-  }));
 
   res.json({
     username: user.username,
     count: log.length,
     _id: user._id,
-    log
+    log: log.map(e => ({
+      description: e.description,
+      duration: e.duration,
+      date: e.date
+    }))
   });
 });
 
 const listener = app.listen(process.env.PORT || 3000, () => {
-  console.log('✅ App listening on port ' + listener.address().port);
+  console.log('Your app is listening on port ' + listener.address().port);
 });
